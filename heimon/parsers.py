@@ -3,20 +3,20 @@
 # Furcadia `which string parsing component: helps parsing Furcadia-style `which
 # lines and extracting information from within them as objects
 #
-# Version: 20160408-2240
+# Version: 20160408-2325
 # Author:  Artex / IceDragon <artex@furcadia.com>
 
 import re
 
 
 RE_HEIMDALL = re.compile(
-    b"""\\(<img src='fsh://system.fsh:86' /> You are connected to Heimdall \\[(\d+):(\d+)\\] \\(QTEMP (\d+)\\)\\. There are (\d+) players on this Heimdall, of which you are player index (\d+) with globalid (\d+), and you are on map (\d+)""")
+    b"""^\\(<img src='fsh://system.fsh:86' /> You are connected to Heimdall \\[(\d+):(\d+)\\] \\(QTEMP (\d+)\\)\\. There are (\d+) players on this Heimdall, of which you are player index (\d+) with globalid (\d+), and you are on map (\d+)""")
 
 RE_HORTON = re.compile(
-    b"""\\(<img src='fsh://system.fsh:86' /> You are connected to Horton \\[(.*):(\d+)\\] \\(QTEMP (\d+)\\)\\. There are (\d+) players in this horton, of which you are the player index (\d+) with global id (\d+)\\. It's a beautiful day in Gosford Park. Horton is running version: (\w*)""")
+    b"""^\\(<img src='fsh://system.fsh:86' /> You are connected to Horton \\[(.*):(\d+)\\] \\(QTEMP (\d+)\\)\\. There are (\d+) players in this horton, of which you are the player index (\d+) with global id (\d+)\\. It's a beautiful day in Gosford Park. Horton is running version: (\w*)""")
 
 RE_TRIBBLE = re.compile(
-    b"""\\(<img src='fsh://system.fsh:86' /> You are connected to tribble \\[(\d+)\\] \\(QTEMP <b>(\d+)</b>\\)\\. There are (\d+) players on this tribble, of which you are player index (\d+) with global id (\d+)\\. You are exactly at \\((\d+),(\d+)\\)\\. This tribble feels like (.*) and is running version: (\w*)""")
+    b"""^\\(<img src='fsh://system.fsh:86' /> You are connected to tribble \\[(\d+)\\] \\(QTEMP <b>(\d+)</b>\\)\\. There are (\d+) players on this tribble, of which you are player index (\d+) with global id (\d+)\\. You are exactly at \\((\d+),(\d+)\\)\\. This tribble feels like (.*) and is running version: (\w*)""")
 
 
 class WhichStringParser(object):
