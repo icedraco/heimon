@@ -16,6 +16,9 @@ from glob import glob
 
 # --- Configuration --------------------------------------------------------- #
 
+# Destination logfile to store alerts in
+G_ALERTS_LOGFILE = "alerts.log"
+
 # All the heimdall IDs we are looking for
 G_HEIMDALL_IDS = range(1, 7)  # 1..(7-1) - BE CAREFUL!
 
@@ -119,8 +122,8 @@ G_ALERT_BUFFER = []
 def alert(message):
     """Display alert in STDERR and add to buffer for later bulk transmission"""
     global G_ALERT_BUFFER
-    data = "[%s][ALERT!] %s\n" % (asctime(), message)
-    sys.stderr.write(data)
+    data = "[%s][ALERT!] %s" % (asctime(), message)
+    sys.stderr.write(data + "\n")
     sys.stdout.write("\x07")
     G_ALERT_BUFFER += [data]
 
@@ -129,8 +132,14 @@ def flush_alert_buffer():
     """Flush the alert buffer so far into some sort of destination"""
     all_alerts = G_ALERT_BUFFER[:] # clone the list
     G_ALERT_BUFFER.clear()
+    do_save(all_alerts)
     do_email(all_alerts)
     return all_alerts
+
+
+def do_save(alerts):
+    with open(G_ALERTS_LOGFILE, 'a', encoding='utf-8') as fd:
+        fd.write("\n".join(alerts + ['']))
 
 
 def do_email(alerts):
