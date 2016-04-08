@@ -121,6 +121,7 @@ def alert(message):
     global G_ALERT_BUFFER
     data = "[%s][ALERT!] %s\n" % (asctime(), message)
     sys.stderr.write(data)
+    sys.stdout.write("\x07")
     G_ALERT_BUFFER += [data]
 
 
@@ -189,6 +190,7 @@ def main(argv):
             test_runner.test(heimtest.result)
         except Exception as ex:
             alert("main()/BUG: Caught exception while executing -> %s" % ex)
+            raise ex
 
         # sleep until the next time
         print("Sleeping (%d secs)" % G_CHECK_INTERVAL)

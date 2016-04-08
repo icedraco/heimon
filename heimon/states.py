@@ -88,19 +88,11 @@ class AuthState(State):
     def sanitize_creds(creds):
         """
         Sanitize credentials that may come in with spaces and as regular strings.
-
-        This function returns a proper (i.e.: (bytes,bytes)) credentials tuple for
-        use in the authentication stage
         """
-        # transform creds from string to byte before replacing stuff
-        bcreds = tuple(
-            map(lambda c: c if type(c) is bytes else bytes(c, "ascii"),
-                creds))
-
         # replace spaces accordingly and return
         return (
-            bcreds[0].replace(b' ', b'|'),
-            bcreds[1].replace(b' ', b'_'))
+            creds[0].replace(' ', '|'),
+            creds[1].replace(' ', '_'))
 
     def __init__(self, test, creds):
         State.__init__(self, test)
@@ -116,7 +108,7 @@ class AuthState(State):
             self.__creds['password']
         ))
 
-        self.heimtest.send(b"connect %s %s\n" % creds)
+        self.heimtest.send("connect %s %s\n" % creds)
         self.__creds = None
 
     def idle(self):
@@ -151,7 +143,7 @@ class WhichTestState(State):
     def enter(self):
         State.enter(self)
         self.__success_counter = 0
-        self.heimtest.send(b"which\n")
+        self.heimtest.send("which\n")
 
     def process(self, line):
         State.process(self, line)
@@ -193,7 +185,7 @@ class ClosingState(State):
 
     def enter(self):
         State.enter(self)
-        self.heimtest.send(b"quit\n")
+        self.heimtest.send("quit\n")
 
 
 class ClosedState(NullState):

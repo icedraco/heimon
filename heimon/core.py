@@ -75,7 +75,7 @@ class HeimdallTest(object):
 
 
     def send(self, data):
-        self.__socket.send(data)
+        self.__socket.send(bytes(data, 'utf-8'))
 
     def recv(self):
         return self.__socket.recv(self.BUFFER_SIZE)
