@@ -1,3 +1,13 @@
+# Connection States - Project Heimon
+#
+# Contains data handlers for each connection state that the HeimdallTest class
+# can find itself in.
+#
+# Version: 20160408-2242
+# Author:  Artex / IceDragon <artex@furcadia.com>
+
+
+
 from heimon.parsers import WhichStringParser
 from time import time
 
@@ -16,7 +26,7 @@ class State(object):
         print(">> %s" % self)
 
     def exit(self):
-        print("<< %s" % self)
+        pass
 
     def idle(self):
         print("!! IDLE: %s" % self)
@@ -94,14 +104,19 @@ class AuthState(State):
 
     def __init__(self, test, creds):
         State.__init__(self, test)
-        self.__creds = self.sanitize_creds(creds)
+        self.__creds = creds
 
     def __str__(self):
         return AuthState.__name__
 
     def enter(self):
         State.enter(self)
-        self.heimtest.send(b"connect %s %s\n" % self.__creds)
+        creds = self.sanitize_creds((
+            self.__creds['name'],
+            self.__creds['password']
+        ))
+
+        self.heimtest.send(b"connect %s %s\n" % creds)
         self.__creds = None
 
     def idle(self):

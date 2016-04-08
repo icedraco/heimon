@@ -1,4 +1,13 @@
+# Parsers - Project Heimon
+#
+# Furcadia `which string parsing component: helps parsing Furcadia-style `which
+# lines and extracting information from within them as objects
+#
+# Version: 20160408-2240
+# Author:  Artex / IceDragon <artex@furcadia.com>
+
 import re
+
 
 RE_HEIMDALL = re.compile(
     b"""\\(<img src='fsh://system.fsh:86' /> You are connected to Heimdall \\[(\d+):(\d+)\\] \\(QTEMP (\d+)\\)\\. There are (\d+) players on this Heimdall, of which you are player index (\d+) with globalid (\d+), and you are on map (\d+)""")

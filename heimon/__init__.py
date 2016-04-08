@@ -1,3 +1,3 @@
-from heimon.tests import HeimdallTest
+from heimon.core import HeimdallTest
 
-__all__ = ["parsers", "states", "tests"]
+__all__ = ["parsers", "states", "core.py"]

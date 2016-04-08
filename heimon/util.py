@@ -1,6 +1,4 @@
-###--# Project Heimon
-#
-# Miscellaneous Utilities
+# Utilities - Project Heimon
 #
 # Version: 20160408-1950
 # Author:  Artex / IceDragon <artex@furcadia.com>
