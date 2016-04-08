@@ -3,7 +3,7 @@
 # Contains all the available tests that can be performed every cycle against
 # the incoming results from HeimdallTest class and in general
 #
-# Version: 20160408-2240
+# Version: 20160409-0000
 # Author:  Artex / IceDragon <artex@furcadia.com>
 
 from time import time
@@ -167,11 +167,18 @@ class TestNoHeimdallsAreMissing(Test):
 
     Requirements:
       'heimdall_tracker' configuration must be present!
+      'freshly_missing_threshold' configuration should be present!
     """
     def test(self, result):
         if 'heimdall_tracker' not in self.config:
             self.alert_func("%s/BUG: heimdall_tracker is not present!" % self.__class__)
             return False
+
+        if 'freshly_missing_threshold' not in self.config:
+            self.alert_func("%s/BUG: freshly_missing_threshold is not present!" % self.__class__)
+            freshly_missing_threshold = 60
+        else:
+            freshly_missing_threshold = self.config['freshly_missing_threshold']
 
         # first, update the tracker with this result
         tracker = self.config['heimdall_tracker']
@@ -179,9 +186,47 @@ class TestNoHeimdallsAreMissing(Test):
         tracker.update_heimdall(result['which']['heimdall']['id'])
 
         # now ask if anything's missing
-        for h_id in tracker.find_missing():
+        missing_heimdalls = tracker.find_missing()
+        self.config['missing_heimdalls'] = missing_heimdalls
+        for heimdall in missing_heimdalls:
+            h_id = heimdall['id']
             h_data = tracker.get(h_id)
-            data = (h_id, time() - h_data['ts_last_seen'])
-            self.alert_func("Heimdall %s has been missing (last seen %.2f secs ago)" % data)
+
+            ts_reported_missing = heimdall['ts_reported_missing']
+            recently_reported = ts_reported_missing > 0 and \
+                                (time() - ts_reported_missing) < freshly_missing_threshold
+
+            if not recently_reported:
+                data = (h_id, time() - h_data['ts_last_seen'])
+                self.alert_func("Heimdall %s has been missing (last seen %.2f secs ago)" % data)
+            else:
+                self.log_func("Heimdall %s is still missing - still fresh; not re-announcing" % h_id)
+
+        return Test.test(self, result)
+
+
+class TestNoLongerMissingHeimdalls(Test):
+    """
+    A test that trips only if there are missing heimdalls that came back to life.
+
+    Requirements:
+      'missing_heimdalls' configuration should be present
+      'missing_heimdalls_old' configuration should be present (maintained by this test)
+    """
+    def test(self, result):
+        # note: we don't actually need the result here
+        if 'missing_heimdalls' in self.config:
+            if 'missing_heimdalls_old' in self.config:
+                currently_missing = self.config['missing_heimdalls']
+                previously_missing = self.config['missing_heimdalls_old']
+                for h_id in previously_missing:
+                    if h_id not in currently_missing:
+                        self.alert_func("Heimdall %s is no longer missing!" % h_id)
+            else:
+                self.log_func("%s: missing_heimdalls_old not found - skipping" % self.__class__)
+
+            self.config['missing_heimdalls_old'] = self.config['missing_heimdalls']
+        else:
+            self.log_func("%s: missing_heimdalls not found - test aborted" % self.__class__)
 
         return Test.test(self, result)

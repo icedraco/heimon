@@ -1,6 +1,6 @@
 # Monitor Component - Project Heimon
 #
-# Version: 20160408-2315
+# Version: 20160409-0000
 # Author:  Artex / IceDragon <artex@furcadia.com>
 
 import sys
@@ -17,10 +17,13 @@ from glob import glob
 # --- Configuration --------------------------------------------------------- #
 
 # All the heimdall IDs we are looking for
-G_HEIMDALL_IDS = range(1, 6)  # 1..6
+G_HEIMDALL_IDS = range(1, 7)  # 1..(7-1) - BE CAREFUL!
 
 # Amount of seconds past which a heimdall should be considered missing
 G_HEIMDALL_ALERT_SECS = 60  # secs
+
+# Amount of seconds to wait before re-announcing that a heimdall is missing
+G_FRESHLY_MISSING_THRESHOLD = 60  # secs
 
 # current/max_seen user count percentage below which an alert is triggered
 G_USERCOUNT_THRESHOLD = 10.0  # percent
@@ -51,7 +54,8 @@ G_RESULT_TESTS = [
     TestAllComponentsPresent,
     TestWhichDelayAboveThreshold,
     TestGlobalIdInSync,
-    TestNoHeimdallsAreMissing
+    TestNoHeimdallsAreMissing,
+    TestNoLongerMissingHeimdalls
 ]
 
 
@@ -71,6 +75,7 @@ class HeimdallTracklist(object):
             'id': heimdall_id,
             'ts_added': time(),
             'ts_last_seen': 0,
+            'ts_reported_missing': 0
         }
         return self
 
@@ -84,12 +89,22 @@ class HeimdallTracklist(object):
             delta = current_time - max(heimdall['ts_added'], heimdall['ts_last_seen'])
             return delta > self.MISSING_THRESHOLD
 
-        return list(map(lambda h: h['id'], filter(filter_missing, self.__heimdalls.values())))
+        # locate missing heimdalls
+        missing_heimdalls = filter(filter_missing, self.__heimdalls.values())
+
+        # update their "reported missing" timestamp
+        for heimdall in missing_heimdalls:
+            heimdall['ts_reported_missing'] = current_time
+
+        # return the missing heimdalls
+        return missing_heimdalls
 
     def update_heimdall(self, h_id):
         if h_id not in self.__heimdalls:
-            alert("WARNING: Unknown heimdall ID detected: %s" % h_id)
+            alert("%s/BUG: Unknown heimdall ID detected: %s" % (self.__class__, h_id))
+            self.add(h_id)
 
+        self.__heimdalls[h_id]['ts_reported_missing'] = 0
         self.__heimdalls[h_id]['ts_last_seen'] = time()
 
     def update_last_check(self):
@@ -144,6 +159,7 @@ def main(argv):
     test_runner.config['heimdall_tracker'] = tracker
     test_runner.config['usercount_threshold'] = G_USERCOUNT_THRESHOLD
     test_runner.config['delay_threshold'] = G_WHICH_DELAY_THRESHOLD
+    test_runner.config['freshly_missing_threshold'] = G_FRESHLY_MISSING_THRESHOLD
 
     print("Reading Furcadia characters...")
     chars = read_chars(G_CREDS_PATH)
@@ -153,20 +169,26 @@ def main(argv):
 
     char_index = 0
     while True:
-        character = chars[char_index % len(chars)]
-        char_index += 1
+        try:
+            character = chars[char_index % len(chars)]
+            char_index += 1
 
-        print("Building HeimdallTest instance... [character: %s]" % character['name'])
-        heimtest = HeimdallTest(G_ADDRESS, character)
+            print("Building HeimdallTest instance... [character: %s]" % character['name'])
+            heimtest = HeimdallTest(G_ADDRESS, character)
 
-        print("Obtaining data from the server...")
-        heimtest.connect()
-        while heimtest.is_connected():
-            heimtest.process_next()
+            print("Obtaining data from the server...")
+            heimtest.connect()
+            while heimtest.is_connected():
+                heimtest.process_next()
 
-        # process results
-        print("Testing result...")
-        test_runner.test(heimtest.result)
+            if 'heimdall' in heimtest.result['which']:
+                print("Found heimdall %d" % heimtest.result['which']['heimdall']['id'])
+
+            # process results
+            print("Testing result...")
+            test_runner.test(heimtest.result)
+        except Exception as ex:
+            alert("main()/BUG: Caught exception while executing -> %s" % ex)
 
         # sleep until the next time
         print("Sleeping (%d secs)" % G_CHECK_INTERVAL)
